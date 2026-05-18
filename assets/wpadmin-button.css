@@ -1,30 +1,34 @@
 .wpadmin-button {
+	bottom: 20px;
+	position: fixed;
+	right: 20px;
+	z-index: 99999;
+}
+
+.wpadmin-button__link {
 	align-items: center;
 	background: var(--wpadmin-button-bg, #2271b1);
 	border-radius: 999px;
-	bottom: 20px;
 	box-shadow: 0 10px 24px var(--wpadmin-button-shadow, rgba(0, 0, 0, 0.22));
 	color: var(--wpadmin-button-fg, #fff);
 	display: inline-flex;
 	height: 44px;
 	justify-content: center;
-	position: fixed;
-	right: 20px;
 	text-decoration: none;
 	transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 	width: 44px;
-	z-index: 99999;
 }
 
-.wpadmin-button:hover,
-.wpadmin-button:focus {
+.wpadmin-button__link:hover,
+.wpadmin-button__link:focus {
 	background: var(--wpadmin-button-hover, #135e96);
 	box-shadow: 0 12px 28px var(--wpadmin-button-shadow, rgba(0, 0, 0, 0.22));
 	color: var(--wpadmin-button-fg, #fff);
 	transform: translateY(-1px);
 }
 
-.wpadmin-button:focus {
+.wpadmin-button__link:focus,
+.wpadmin-button__badge:focus {
 	outline: 2px solid var(--wpadmin-button-fg, #fff);
 	outline-offset: 3px;
 }
@@ -40,16 +44,52 @@
 	fill: currentColor;
 }
 
+.wpadmin-button__badge {
+	align-items: center;
+	background: #d63638;
+	border: 2px solid #fff;
+	border-radius: 999px;
+	box-shadow: 0 6px 14px rgba(0, 0, 0, 0.28);
+	color: #fff;
+	display: inline-flex;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	font-size: 11px;
+	font-weight: 700;
+	height: 20px;
+	justify-content: center;
+	line-height: 1;
+	min-width: 20px;
+	padding: 0 5px;
+	position: absolute;
+	right: -7px;
+	text-decoration: none;
+	top: -7px;
+}
+
+.wpadmin-button__badge:hover,
+.wpadmin-button__badge:focus {
+	background: #b32d2e;
+	color: #fff;
+}
+
 .wpadmin-button--left {
 	left: 20px;
+	right: auto;
+}
+
+.wpadmin-button--left .wpadmin-button__badge {
+	left: -7px;
 	right: auto;
 }
 
 @media (max-width: 782px) {
 	.wpadmin-button {
 		bottom: 16px;
-		height: 42px;
 		right: 16px;
+	}
+
+	.wpadmin-button__link {
+		height: 42px;
 		width: 42px;
 	}
 

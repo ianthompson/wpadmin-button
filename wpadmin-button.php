@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WPAdmin Button
  * Description: Shows a small floating dashboard button when the current user has the frontend toolbar disabled.
- * Version: 1.3.0
+ * Version: 1.4.0
  * Author: Ian Thompson
  * License: GPL-2.0-or-later
  * Requires PHP: 7.4
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPADMIN_BUTTON_VERSION', '1.3.0' );
+define( 'WPADMIN_BUTTON_VERSION', '1.4.0' );
 define( 'WPADMIN_BUTTON_OPTION', 'wpadmin_button_settings' );
 define( 'WPADMIN_BUTTON_FILE', __FILE__ );
 define( 'WPADMIN_BUTTON_URL', plugin_dir_url( __FILE__ ) );
@@ -442,6 +442,35 @@ function wpadmin_button_get_destination_url() {
 }
 
 /**
+ * Gets update count data for the current user.
+ *
+ * @return array{count: int, title: string, url: string}
+ */
+function wpadmin_button_get_update_badge_data() {
+	if ( ! current_user_can( 'update_core' ) && ! current_user_can( 'update_plugins' ) && ! current_user_can( 'update_themes' ) ) {
+		return array(
+			'count' => 0,
+			'title' => '',
+			'url'   => '',
+		);
+	}
+
+	if ( ! function_exists( 'wp_get_update_data' ) ) {
+		require_once ABSPATH . 'wp-includes/update.php';
+	}
+
+	$update_data = wp_get_update_data();
+	$count       = isset( $update_data['counts']['total'] ) ? (int) $update_data['counts']['total'] : 0;
+	$title       = isset( $update_data['title'] ) ? wp_strip_all_tags( $update_data['title'] ) : '';
+
+	return array(
+		'count' => max( 0, $count ),
+		'title' => $title,
+		'url'   => admin_url( 'update-core.php' ),
+	);
+}
+
+/**
  * Gets frontend colors for the current user's admin color scheme.
  *
  * @return array{background: string, foreground: string, hover: string, shadow: string}
@@ -536,14 +565,32 @@ function wpadmin_button_render_frontend_button() {
 		$classes[] = 'wpadmin-button--left';
 	}
 
+	$update_badge = wpadmin_button_get_update_badge_data();
+	$badge_label  = $update_badge['title'];
+
+	if ( ! $badge_label && $update_badge['count'] > 0 ) {
+		$badge_label = sprintf(
+			/* translators: %d: Number of available WordPress updates. */
+			_n( '%d WordPress update available', '%d WordPress updates available', $update_badge['count'], 'wpadmin-button' ),
+			$update_badge['count']
+		);
+	}
+
 	?>
-	<a class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>" href="<?php echo esc_url( wpadmin_button_get_destination_url() ); ?>" aria-label="<?php esc_attr_e( 'Open WordPress admin', 'wpadmin-button' ); ?>">
-		<span class="wpadmin-button__icon" aria-hidden="true">
-			<svg viewBox="0 0 24 24" focusable="false" role="img">
-				<path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.02-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.37-.31-.6-.22l-2.49 1a7.31 7.31 0 0 0-1.69-.98l-.38-2.65A.49.49 0 0 0 14.01 2h-4c-.25 0-.46.18-.5.42l-.38 2.65c-.61.24-1.18.56-1.69.98l-2.49-1c-.23-.08-.48 0-.6.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.08.65-.08.98s.03.66.08.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.37.31.6.22l2.49-1c.51.4 1.08.73 1.69.98l.38 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.24 1.18-.57 1.69-.98l2.49 1c.23.08.48 0 .6-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z" />
-			</svg>
-		</span>
-	</a>
+	<div class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
+		<a class="wpadmin-button__link" href="<?php echo esc_url( wpadmin_button_get_destination_url() ); ?>" aria-label="<?php esc_attr_e( 'Open WordPress admin', 'wpadmin-button' ); ?>">
+			<span class="wpadmin-button__icon" aria-hidden="true">
+				<svg viewBox="0 0 24 24" focusable="false" role="img">
+					<path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.02-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.37-.31-.6-.22l-2.49 1a7.31 7.31 0 0 0-1.69-.98l-.38-2.65A.49.49 0 0 0 14.01 2h-4c-.25 0-.46.18-.5.42l-.38 2.65c-.61.24-1.18.56-1.69.98l-2.49-1c-.23-.08-.48 0-.6.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.08.65-.08.98s.03.66.08.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.37.31.6.22l2.49-1c.51.4 1.08.73 1.69.98l.38 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.24 1.18-.57 1.69-.98l2.49 1c.23.08.48 0 .6-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z" />
+				</svg>
+			</span>
+		</a>
+		<?php if ( $update_badge['count'] > 0 ) : ?>
+			<a class="wpadmin-button__badge" href="<?php echo esc_url( $update_badge['url'] ); ?>" aria-label="<?php echo esc_attr( $badge_label ); ?>">
+				<?php echo esc_html( min( 99, $update_badge['count'] ) ); ?>
+			</a>
+		<?php endif; ?>
+	</div>
 	<?php
 }
 add_action( 'wp_footer', 'wpadmin_button_render_frontend_button' );
