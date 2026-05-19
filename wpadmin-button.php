@@ -538,6 +538,14 @@ function wpadmin_button_enqueue_assets() {
 		WPADMIN_BUTTON_VERSION
 	);
 
+	wp_enqueue_script(
+		'wpadmin-button',
+		WPADMIN_BUTTON_URL . 'assets/wpadmin-button.js',
+		array(),
+		WPADMIN_BUTTON_VERSION,
+		true
+	);
+
 	$inline_css = sprintf(
 		':root{--wpadmin-button-bg:%1$s;--wpadmin-button-fg:%2$s;--wpadmin-button-hover:%3$s;--wpadmin-button-shadow:%4$s;}',
 		esc_html( $colors['background'] ),
