@@ -3,7 +3,7 @@ Contributors: ianthompson
 Tags: admin, dashboard, toolbar
 Requires at least: 5.8
 Tested up to: 6.5
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 License: GPL-2.0-or-later
 
 Adds a small floating dashboard button on the frontend for logged-in users who have disabled the WordPress toolbar.

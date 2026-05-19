@@ -24,3 +24,5 @@ The plugin includes a GitHub Releases update checker. To publish a new version:
 4. Attach `wpadmin-button.zip` to the GitHub release.
 
 WordPress will use the attached release asset for dashboard updates.
+
+The update code preserves the active plugin directory during GitHub package installs so WordPress can reactivate the plugin after an update even if a previous manual install used a different folder name.

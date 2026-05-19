@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WPAdmin Button
  * Description: Shows a small floating dashboard button when the current user has the frontend toolbar disabled.
- * Version: 1.4.0
+ * Version: 1.4.1
  * Author: Ian Thompson
  * License: GPL-2.0-or-later
  * Requires PHP: 7.4
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPADMIN_BUTTON_VERSION', '1.4.0' );
+define( 'WPADMIN_BUTTON_VERSION', '1.4.1' );
 define( 'WPADMIN_BUTTON_OPTION', 'wpadmin_button_settings' );
 define( 'WPADMIN_BUTTON_FILE', __FILE__ );
 define( 'WPADMIN_BUTTON_URL', plugin_dir_url( __FILE__ ) );
@@ -696,6 +696,50 @@ function wpadmin_button_check_for_update( $transient ) {
 	return $transient;
 }
 add_filter( 'pre_set_site_transient_update_plugins', 'wpadmin_button_check_for_update' );
+
+/**
+ * Keeps GitHub update packages aligned with the currently installed plugin folder.
+ *
+ * WordPress reactivates plugins by their active plugin basename after update. If a
+ * custom package extracts to a different top-level folder, the update can succeed
+ * but WordPress may report that the plugin file no longer exists.
+ *
+ * @param string      $source The path to the package source.
+ * @param string      $remote_source The path to the remote source.
+ * @param WP_Upgrader $upgrader The upgrader instance.
+ * @param array       $hook_extra Extra arguments passed to hooked filters.
+ * @return string
+ */
+function wpadmin_button_preserve_install_directory( $source, $remote_source, $upgrader, $hook_extra ) {
+	if ( empty( $hook_extra['plugin'] ) || plugin_basename( WPADMIN_BUTTON_FILE ) !== $hook_extra['plugin'] ) {
+		return $source;
+	}
+
+	$installed_directory = dirname( plugin_basename( WPADMIN_BUTTON_FILE ) );
+
+	if ( '.' === $installed_directory || basename( $source ) === $installed_directory ) {
+		return $source;
+	}
+
+	global $wp_filesystem;
+
+	if ( ! $wp_filesystem ) {
+		return $source;
+	}
+
+	$renamed_source = trailingslashit( $remote_source ) . $installed_directory;
+
+	if ( $wp_filesystem->exists( $renamed_source ) ) {
+		$wp_filesystem->delete( $renamed_source, true );
+	}
+
+	if ( $wp_filesystem->move( $source, $renamed_source, true ) ) {
+		return $renamed_source;
+	}
+
+	return $source;
+}
+add_filter( 'upgrader_source_selection', 'wpadmin_button_preserve_install_directory', 10, 4 );
 
 /**
  * Provides plugin details for the WordPress update modal.
