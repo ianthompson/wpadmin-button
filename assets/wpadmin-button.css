@@ -1,7 +1,13 @@
 .wpadmin-button {
-	bottom: 20px;
+	--wpadmin-button-edge-offset: 20px;
+	--wpadmin-button-safe-bottom: env(safe-area-inset-bottom, 0px);
+	--wpadmin-button-safe-left: env(safe-area-inset-left, 0px);
+	--wpadmin-button-safe-right: env(safe-area-inset-right, 0px);
+
+	bottom: calc(var(--wpadmin-button-edge-offset) + var(--wpadmin-button-safe-bottom));
+	isolation: isolate;
 	position: fixed;
-	right: 20px;
+	right: calc(var(--wpadmin-button-edge-offset) + var(--wpadmin-button-safe-right));
 	z-index: 99999;
 }
 
@@ -73,7 +79,7 @@
 }
 
 .wpadmin-button--left {
-	left: 20px;
+	left: calc(var(--wpadmin-button-edge-offset) + var(--wpadmin-button-safe-left));
 	right: auto;
 }
 
@@ -84,8 +90,10 @@
 
 @media (max-width: 782px) {
 	.wpadmin-button {
-		bottom: 16px;
-		right: 16px;
+		--wpadmin-button-edge-offset: 16px;
+
+		bottom: calc(var(--wpadmin-button-viewport-bottom, var(--wpadmin-button-edge-offset)) + var(--wpadmin-button-safe-bottom));
+		right: calc(var(--wpadmin-button-viewport-right, var(--wpadmin-button-edge-offset)) + var(--wpadmin-button-safe-right));
 	}
 
 	.wpadmin-button__link {
@@ -94,7 +102,7 @@
 	}
 
 	.wpadmin-button--left {
-		left: 16px;
+		left: calc(var(--wpadmin-button-viewport-left, var(--wpadmin-button-edge-offset)) + var(--wpadmin-button-safe-left));
 		right: auto;
 	}
 }
