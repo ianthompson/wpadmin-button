@@ -88,6 +88,10 @@
 		// open state, so we ignore the click to avoid immediately re-closing the menu.
 		toggle.addEventListener( 'click', function () {
 			if ( openedByHover ) {
+				// Hover already opened the menu; a click means "dismiss it" and hand
+				// control back until the pointer leaves and re-enters.
+				openedByHover = false;
+				close( false );
 				return;
 			}
 			if ( isOpen() ) {
