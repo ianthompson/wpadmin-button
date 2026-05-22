@@ -30,7 +30,7 @@ require_once __DIR__ . '/includes/menu-logic.php';
 /**
  * Returns the plugin settings with defaults applied.
  *
- * @return array{roles: string[], position: string, destination: string}
+ * @return array{roles: string[], position: string, menu_items: string[]}
  */
 function wpadmin_button_get_settings() {
 	$settings = get_option( WPADMIN_BUTTON_OPTION, array() );
@@ -39,12 +39,20 @@ function wpadmin_button_get_settings() {
 		$settings = array();
 	}
 
+	$valid_keys = array_keys( wpadmin_button_get_menu_catalog() );
+
+	// Migrate sites that predate the menu: seed menu_items from old destination.
+	if ( ! isset( $settings['menu_items'] ) || ! is_array( $settings['menu_items'] ) ) {
+		$previous              = isset( $settings['destination'] ) ? (string) $settings['destination'] : '';
+		$settings['menu_items'] = wpadmin_button_seed_menu_items( $previous, $valid_keys );
+	}
+
 	$settings = wp_parse_args(
 		$settings,
 		array(
-			'roles'       => array( 'administrator' ),
-			'position'    => 'right',
-			'destination' => 'dashboard',
+			'roles'      => array( 'administrator' ),
+			'position'   => 'right',
+			'menu_items' => wpadmin_button_seed_menu_items( '', $valid_keys ),
 		)
 	);
 
@@ -54,9 +62,15 @@ function wpadmin_button_get_settings() {
 		$settings['position'] = 'right';
 	}
 
-	if ( ! isset( wpadmin_button_get_destinations()[ $settings['destination'] ] ) ) {
-		$settings['destination'] = 'dashboard';
+	// Keep only known keys, de-duplicated, in stored order.
+	$clean_items = array();
+	foreach ( (array) $settings['menu_items'] as $key ) {
+		$key = sanitize_key( $key );
+		if ( in_array( $key, $valid_keys, true ) && ! in_array( $key, $clean_items, true ) ) {
+			$clean_items[] = $key;
+		}
 	}
+	$settings['menu_items'] = $clean_items;
 
 	return $settings;
 }
@@ -202,7 +216,7 @@ function wpadmin_button_edit_current_label() {
  * Sanitizes settings before storage.
  *
  * @param array $input Raw option input.
- * @return array{roles: string[], position: string, destination: string}
+ * @return array{roles: string[], position: string, menu_items: string[]}
  */
 function wpadmin_button_sanitize_settings( $input ) {
 	$current_settings = wpadmin_button_get_settings();
@@ -231,17 +245,28 @@ function wpadmin_button_sanitize_settings( $input ) {
 		$position = 'right';
 	}
 
-	$destination  = wpadmin_button_can_manage_global_settings() && isset( $input['destination'] ) ? sanitize_key( $input['destination'] ) : $current_settings['destination'];
-	$destinations = wpadmin_button_get_destinations();
+	// Menu items: an ordered, hidden-field-encoded list "key1,key2,..." from the
+	// sortable UI, plus per-row checkboxes for which are enabled.
+	if ( wpadmin_button_can_manage_global_settings() ) {
+		$valid_keys = array_keys( wpadmin_button_get_menu_catalog() );
+		$order      = isset( $input['menu_order'] ) ? explode( ',', (string) $input['menu_order'] ) : array();
+		$enabled    = isset( $input['menu_items'] ) && is_array( $input['menu_items'] ) ? array_map( 'sanitize_key', $input['menu_items'] ) : array();
 
-	if ( ! isset( $destinations[ $destination ] ) ) {
-		$destination = 'dashboard';
+		$menu_items = array();
+		foreach ( $order as $key ) {
+			$key = sanitize_key( $key );
+			if ( in_array( $key, $valid_keys, true ) && in_array( $key, $enabled, true ) && ! in_array( $key, $menu_items, true ) ) {
+				$menu_items[] = $key;
+			}
+		}
+	} else {
+		$menu_items = $current_settings['menu_items'];
 	}
 
 	return array(
-		'roles'       => array_values( array_unique( $roles ) ),
-		'position'    => $position,
-		'destination' => $destination,
+		'roles'      => array_values( array_unique( $roles ) ),
+		'position'   => $position,
+		'menu_items' => $menu_items,
 	);
 }
 
@@ -270,9 +295,9 @@ function wpadmin_button_register_settings() {
 			'type'              => 'array',
 			'sanitize_callback' => 'wpadmin_button_sanitize_settings',
 			'default'           => array(
-				'roles'       => array( 'administrator' ),
-				'position'    => 'right',
-				'destination' => 'dashboard',
+				'roles'      => array( 'administrator' ),
+				'position'   => 'right',
+				'menu_items' => array( 'edit_current', 'dashboard' ),
 			),
 		)
 	);
