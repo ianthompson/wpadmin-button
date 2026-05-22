@@ -52,10 +52,12 @@
 	transition: transform 200ms ease;
 }
 
-/* Vertical menu, stacked above the toggle. */
+/* Vertical menu, stacked above the toggle. The menu ships with the [hidden]
+   attribute and is shown only via the :not([hidden]) rule below — so display is
+   intentionally NOT set here, otherwise an author "display" would override the
+   user-agent [hidden] { display: none } rule and the menu would never close. */
 .wpadmin-button__menu {
 	bottom: 56px;
-	display: flex;
 	flex-direction: column;
 	gap: 10px;
 	list-style: none;
