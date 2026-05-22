@@ -59,3 +59,29 @@ function wpadmin_button_filter_menu_items( array $ordered_keys, array $hidden_ke
 
 	return $result;
 }
+
+/**
+ * Builds the default menu_items list when a site upgrades from the old
+ * single-destination model (or has no menu configured yet).
+ *
+ * @param string|null $previous_destination Old 'destination' setting value, if any.
+ * @param string[]    $valid_keys           Keys present in the menu-items catalog.
+ * @return string[] Ordered, de-duplicated, validated seed list.
+ */
+function wpadmin_button_seed_menu_items( $previous_destination, array $valid_keys ) {
+	$seed = array( 'edit_current', 'dashboard' );
+
+	if ( is_string( $previous_destination ) && '' !== $previous_destination ) {
+		$seed[] = $previous_destination;
+	}
+
+	$out = array();
+
+	foreach ( $seed as $key ) {
+		if ( in_array( $key, $valid_keys, true ) && ! in_array( $key, $out, true ) ) {
+			$out[] = $key;
+		}
+	}
+
+	return $out;
+}

@@ -47,4 +47,28 @@ final class MenuLogicTest extends TestCase {
 
         $this->assertSame( array( 'dashboard', 'posts', 'media' ), $result );
     }
+
+    private function valid_keys() {
+        return array( 'edit_current', 'dashboard', 'posts', 'media', 'pages', 'comments', 'appearance', 'plugins', 'users', 'profile', 'tools', 'settings' );
+    }
+
+    public function test_seed_includes_edit_current_and_dashboard_plus_previous() {
+        $result = wpadmin_button_seed_menu_items( 'posts', $this->valid_keys() );
+        $this->assertSame( array( 'edit_current', 'dashboard', 'posts' ), $result );
+    }
+
+    public function test_seed_dedupes_when_previous_already_seeded() {
+        $result = wpadmin_button_seed_menu_items( 'dashboard', $this->valid_keys() );
+        $this->assertSame( array( 'edit_current', 'dashboard' ), $result );
+    }
+
+    public function test_seed_ignores_unknown_previous_destination() {
+        $result = wpadmin_button_seed_menu_items( 'nonsense', $this->valid_keys() );
+        $this->assertSame( array( 'edit_current', 'dashboard' ), $result );
+    }
+
+    public function test_seed_handles_empty_previous() {
+        $result = wpadmin_button_seed_menu_items( '', $this->valid_keys() );
+        $this->assertSame( array( 'edit_current', 'dashboard' ), $result );
+    }
 }
