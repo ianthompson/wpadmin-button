@@ -593,23 +593,6 @@ function wpadmin_button_get_render_items() {
 }
 
 /**
- * Gets the admin URL for the configured button destination.
- *
- * @return string
- */
-function wpadmin_button_get_destination_url() {
-	$settings     = wpadmin_button_get_settings();
-	$destinations = wpadmin_button_get_destinations();
-	$destination  = isset( $destinations[ $settings['destination'] ] ) ? $destinations[ $settings['destination'] ] : $destinations['dashboard'];
-
-	if ( ! current_user_can( $destination['capability'] ) ) {
-		$destination = $destinations['dashboard'];
-	}
-
-	return admin_url( $destination['path'] );
-}
-
-/**
  * Gets update count data for the current user.
  *
  * @return array{count: int, title: string, url: string}
@@ -735,6 +718,7 @@ function wpadmin_button_render_frontend_button() {
 	}
 
 	$settings = wpadmin_button_get_settings();
+	$items    = wpadmin_button_get_render_items();
 	$classes  = array( 'wpadmin-button' );
 
 	if ( 'left' === $settings['position'] ) {
@@ -751,16 +735,35 @@ function wpadmin_button_render_frontend_button() {
 			$update_badge['count']
 		);
 	}
-
 	?>
-	<div class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
-		<a class="wpadmin-button__link" href="<?php echo esc_url( wpadmin_button_get_destination_url() ); ?>" aria-label="<?php esc_attr_e( 'Open WordPress admin', 'wpadmin-button' ); ?>">
+	<div class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>" data-wpadmin-button>
+		<?php if ( ! empty( $items ) ) : ?>
+			<ul class="wpadmin-button__menu" role="menu" hidden>
+				<?php foreach ( $items as $item ) : ?>
+					<li class="wpadmin-button__menu-item" role="none">
+						<a class="wpadmin-button__pill" role="menuitem" href="<?php echo esc_url( $item['url'] ); ?>">
+							<span class="wpadmin-button__pill-icon" aria-hidden="true"></span>
+							<span class="wpadmin-button__pill-label"><?php echo esc_html( $item['label'] ); ?></span>
+						</a>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		<?php endif; ?>
+
+		<button
+			type="button"
+			class="wpadmin-button__toggle"
+			aria-haspopup="true"
+			aria-expanded="false"
+			aria-label="<?php esc_attr_e( 'Open admin shortcuts', 'wpadmin-button' ); ?>"
+		>
 			<span class="wpadmin-button__icon" aria-hidden="true">
 				<svg viewBox="0 0 24 24" focusable="false" role="img">
 					<path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.02-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.37-.31-.6-.22l-2.49 1a7.31 7.31 0 0 0-1.69-.98l-.38-2.65A.49.49 0 0 0 14.01 2h-4c-.25 0-.46.18-.5.42l-.38 2.65c-.61.24-1.18.56-1.69.98l-2.49-1c-.23-.08-.48 0-.6.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.08.65-.08.98s.03.66.08.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.37.31.6.22l2.49-1c.51.4 1.08.73 1.69.98l.38 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.24 1.18-.57 1.69-.98l2.49 1c.23.08.48 0 .6-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z" />
 				</svg>
 			</span>
-		</a>
+		</button>
+
 		<?php if ( $update_badge['count'] > 0 ) : ?>
 			<a class="wpadmin-button__badge" href="<?php echo esc_url( $update_badge['url'] ); ?>" aria-label="<?php echo esc_attr( $badge_label ); ?>">
 				<?php echo esc_html( min( 99, $update_badge['count'] ) ); ?>
