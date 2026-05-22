@@ -4,8 +4,9 @@
 	var visualViewport = window.visualViewport;
 	var baseOffset = 16;
 
-	if ( button && button.parentNode !== document.body ) {
-		document.body.appendChild( button );
+	// Body-level theme effects can create a fixed-position containing block.
+	if ( button && button.parentNode !== root ) {
+		root.appendChild( button );
 	}
 
 	function setViewportOffsets() {
