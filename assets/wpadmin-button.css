@@ -11,32 +11,105 @@
 	z-index: 99999;
 }
 
-.wpadmin-button__link {
+.wpadmin-button__toggle {
 	align-items: center;
 	background: var(--wpadmin-button-bg, #2271b1);
+	border: 0;
 	border-radius: 999px;
 	box-shadow: 0 10px 24px var(--wpadmin-button-shadow, rgba(0, 0, 0, 0.22));
 	color: var(--wpadmin-button-fg, #fff);
+	cursor: pointer;
 	display: inline-flex;
 	height: 44px;
 	justify-content: center;
-	text-decoration: none;
+	padding: 0;
 	transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 	width: 44px;
 }
 
-.wpadmin-button__link:hover,
-.wpadmin-button__link:focus {
+.wpadmin-button__toggle:hover,
+.wpadmin-button__toggle:focus {
 	background: var(--wpadmin-button-hover, #135e96);
 	box-shadow: 0 12px 28px var(--wpadmin-button-shadow, rgba(0, 0, 0, 0.22));
 	color: var(--wpadmin-button-fg, #fff);
 	transform: translateY(-1px);
 }
 
-.wpadmin-button__link:focus,
-.wpadmin-button__badge:focus {
+.wpadmin-button__toggle:focus,
+.wpadmin-button__badge:focus,
+.wpadmin-button__pill:focus {
 	outline: 2px solid var(--wpadmin-button-fg, #fff);
 	outline-offset: 3px;
+}
+
+/* Open state: rotate the icon toward an "x" feel. */
+.wpadmin-button[data-open="true"] .wpadmin-button__icon {
+	transform: rotate(135deg);
+}
+
+.wpadmin-button__icon {
+	transition: transform 200ms ease;
+}
+
+/* Vertical menu, stacked above the toggle. */
+.wpadmin-button__menu {
+	bottom: 56px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	list-style: none;
+	margin: 0;
+	max-height: calc(100vh - 96px);
+	overflow-y: auto;
+	padding: 0;
+	position: absolute;
+	right: 0;
+}
+
+.wpadmin-button--left .wpadmin-button__menu {
+	left: 0;
+	right: auto;
+	align-items: flex-start;
+}
+
+.wpadmin-button__menu:not([hidden]) {
+	display: flex;
+}
+
+.wpadmin-button__menu-item {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.wpadmin-button--left .wpadmin-button__menu-item {
+	justify-content: flex-start;
+}
+
+.wpadmin-button__pill {
+	align-items: center;
+	background: var(--wpadmin-button-bg, #2271b1);
+	border-radius: 999px;
+	box-shadow: 0 6px 16px var(--wpadmin-button-shadow, rgba(0, 0, 0, 0.22));
+	color: var(--wpadmin-button-fg, #fff);
+	display: inline-flex;
+	gap: 8px;
+	min-height: 40px;
+	padding: 0 16px;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.wpadmin-button__pill:hover,
+.wpadmin-button__pill:focus {
+	background: var(--wpadmin-button-hover, #135e96);
+	color: var(--wpadmin-button-fg, #fff);
+}
+
+.wpadmin-button__pill-label {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1;
 }
 
 .wpadmin-button__icon,
@@ -96,7 +169,7 @@
 		right: calc(var(--wpadmin-button-viewport-right, var(--wpadmin-button-edge-offset)) + var(--wpadmin-button-safe-right));
 	}
 
-	.wpadmin-button__link {
+	.wpadmin-button__toggle {
 		height: 42px;
 		width: 42px;
 	}
@@ -104,5 +177,30 @@
 	.wpadmin-button--left {
 		left: calc(var(--wpadmin-button-viewport-left, var(--wpadmin-button-edge-offset)) + var(--wpadmin-button-safe-left));
 		right: auto;
+	}
+}
+
+/* Entrance animation for each pill when the menu opens. */
+.wpadmin-button[data-open="true"] .wpadmin-button__menu-item {
+	animation: wpadmin-button-pop 200ms ease both;
+}
+
+.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-child(1) { animation-delay: 0ms; }
+.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-child(2) { animation-delay: 30ms; }
+.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-child(3) { animation-delay: 60ms; }
+.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-child(4) { animation-delay: 90ms; }
+.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-child(n+5) { animation-delay: 120ms; }
+
+@keyframes wpadmin-button-pop {
+	from { opacity: 0; transform: translateY(8px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wpadmin-button__toggle,
+	.wpadmin-button__icon,
+	.wpadmin-button[data-open="true"] .wpadmin-button__menu-item {
+		animation: none;
+		transition: none;
 	}
 }
