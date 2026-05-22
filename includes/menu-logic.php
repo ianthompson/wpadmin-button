@@ -64,7 +64,7 @@ function wpadmin_button_filter_menu_items( array $ordered_keys, array $hidden_ke
  * Builds the default menu_items list when a site upgrades from the old
  * single-destination model (or has no menu configured yet).
  *
- * @param string|null $previous_destination Old 'destination' setting value, if any.
+ * @param mixed  $previous_destination Old 'destination' setting value, if any (non-string values are ignored).
  * @param string[]    $valid_keys           Keys present in the menu-items catalog.
  * @return string[] Ordered, de-duplicated, validated seed list.
  */
