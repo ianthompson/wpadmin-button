@@ -484,6 +484,106 @@ function wpadmin_button_get_hidden_items( $user_id ) {
 }
 
 /**
+ * Renders the WPAdmin Button fields on a user's profile screen.
+ *
+ * @param WP_User $user The user being edited.
+ */
+function wpadmin_button_render_profile_fields( $user ) {
+	$settings = wpadmin_button_get_settings();
+	$mode     = wpadmin_button_get_visibility_mode( $user->ID );
+	$hidden   = wpadmin_button_get_hidden_items( $user->ID );
+	$catalog  = wpadmin_button_get_menu_catalog();
+	?>
+	<h2><?php esc_html_e( 'WPAdmin Button', 'wpadmin-button' ); ?></h2>
+	<table class="form-table" role="presentation">
+		<tbody>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Show the floating button', 'wpadmin-button' ); ?></th>
+				<td>
+					<fieldset>
+						<legend class="screen-reader-text"><?php esc_html_e( 'Show the floating button', 'wpadmin-button' ); ?></legend>
+						<label><input type="radio" name="wpadmin_button_visibility" value="auto" <?php checked( 'auto', $mode ); ?> /> <?php esc_html_e( 'Automatically — only when the toolbar above is hidden', 'wpadmin-button' ); ?></label><br />
+						<label><input type="radio" name="wpadmin_button_visibility" value="always" <?php checked( 'always', $mode ); ?> /> <?php esc_html_e( 'Always', 'wpadmin-button' ); ?></label><br />
+						<label><input type="radio" name="wpadmin_button_visibility" value="never" <?php checked( 'never', $mode ); ?> /> <?php esc_html_e( 'Never', 'wpadmin-button' ); ?></label>
+					</fieldset>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Your menu shortcuts', 'wpadmin-button' ); ?></th>
+				<td>
+					<fieldset>
+						<legend class="screen-reader-text"><?php esc_html_e( 'Your menu shortcuts', 'wpadmin-button' ); ?></legend>
+						<?php
+						$shown_any = false;
+						foreach ( $settings['menu_items'] as $key ) {
+							if ( ! isset( $catalog[ $key ] ) ) {
+								continue;
+							}
+							$shown_any = true;
+							?>
+							<label>
+								<input
+									type="checkbox"
+									name="wpadmin_button_shown_items[]"
+									value="<?php echo esc_attr( $key ); ?>"
+									<?php checked( ! in_array( $key, $hidden, true ) ); ?>
+								/>
+								<?php echo esc_html( $catalog[ $key ]['label'] ); ?>
+							</label><br />
+							<?php
+						}
+						if ( ! $shown_any ) {
+							echo '<p class="description">' . esc_html__( 'No shortcuts have been enabled by an administrator yet.', 'wpadmin-button' ) . '</p>';
+						}
+						?>
+						<p class="description"><?php esc_html_e( 'Untick any shortcuts you do not want in your menu. You can only choose from shortcuts an administrator has enabled.', 'wpadmin-button' ); ?></p>
+					</fieldset>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<?php
+}
+add_action( 'show_user_profile', 'wpadmin_button_render_profile_fields' );
+add_action( 'edit_user_profile', 'wpadmin_button_render_profile_fields' );
+
+/**
+ * Saves the WPAdmin Button profile fields.
+ *
+ * @param int $user_id The user being saved.
+ */
+function wpadmin_button_save_profile_fields( $user_id ) {
+	if ( ! current_user_can( 'edit_user', $user_id ) ) {
+		return;
+	}
+
+	if ( isset( $_POST['wpadmin_button_visibility'] ) ) {
+		$mode = sanitize_key( wp_unslash( $_POST['wpadmin_button_visibility'] ) );
+		if ( ! in_array( $mode, array( 'auto', 'always', 'never' ), true ) ) {
+			$mode = 'auto';
+		}
+		update_user_meta( $user_id, 'wpadmin_button_visibility', $mode );
+	}
+
+	$settings = wpadmin_button_get_settings();
+	$shown    = isset( $_POST['wpadmin_button_shown_items'] ) && is_array( $_POST['wpadmin_button_shown_items'] )
+		? array_map( 'sanitize_key', wp_unslash( $_POST['wpadmin_button_shown_items'] ) )
+		: array();
+
+	// Hidden = enabled items the user did NOT keep ticked.
+	$hidden = array();
+	foreach ( $settings['menu_items'] as $key ) {
+		if ( ! in_array( $key, $shown, true ) ) {
+			$hidden[] = $key;
+		}
+	}
+
+	update_user_meta( $user_id, 'wpadmin_button_hidden_items', $hidden );
+}
+add_action( 'personal_options_update', 'wpadmin_button_save_profile_fields' );
+add_action( 'edit_user_profile_update', 'wpadmin_button_save_profile_fields' );
+
+/**
  * Determines whether the current user should see the floating button.
  *
  * @return bool
