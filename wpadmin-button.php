@@ -25,6 +25,8 @@ define( 'WPADMIN_BUTTON_GITHUB_ASSET', 'wpadmin-button.zip' );
 define( 'WPADMIN_BUTTON_GITHUB_REPO_URL', 'https://github.com/ianthompson/wpadmin-button' );
 define( 'WPADMIN_BUTTON_GITHUB_RELEASES_URL', 'https://api.github.com/repos/ianthompson/wpadmin-button/releases/latest' );
 
+require_once __DIR__ . '/includes/menu-logic.php';
+
 /**
  * Returns the plugin settings with defaults applied.
  *
@@ -131,6 +133,69 @@ function wpadmin_button_get_destinations() {
 			'capability' => 'manage_options',
 		),
 	);
+}
+
+/**
+ * Returns the full menu-items catalog: the contextual edit item plus the
+ * static destinations. Used by settings UI and rendering.
+ *
+ * @return array<string, array{label: string, contextual: bool}>
+ */
+function wpadmin_button_get_menu_catalog() {
+	$catalog = array(
+		'edit_current' => array(
+			'label'      => __( 'Edit current page', 'wpadmin-button' ),
+			'contextual' => true,
+		),
+	);
+
+	foreach ( wpadmin_button_get_destinations() as $key => $dest ) {
+		$catalog[ $key ] = array(
+			'label'      => $dest['label'],
+			'contextual' => false,
+		);
+	}
+
+	return $catalog;
+}
+
+/**
+ * Returns the edit URL for the current singular view if the user can edit it.
+ *
+ * @return string Empty string when not on an editable singular view.
+ */
+function wpadmin_button_edit_current_url() {
+	if ( ! is_singular() ) {
+		return '';
+	}
+
+	$post_id = get_queried_object_id();
+
+	if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
+		return '';
+	}
+
+	$link = get_edit_post_link( $post_id );
+
+	return $link ? $link : '';
+}
+
+/**
+ * Returns the content-type-aware label for the current edit item
+ * ("Edit Page", "Edit Post", "Edit Product", ...).
+ *
+ * @return string
+ */
+function wpadmin_button_edit_current_label() {
+	$post_id   = get_queried_object_id();
+	$post_type = $post_id ? get_post_type( $post_id ) : '';
+	$type_obj  = $post_type ? get_post_type_object( $post_type ) : null;
+
+	if ( $type_obj && isset( $type_obj->labels->edit_item ) && $type_obj->labels->edit_item ) {
+		return $type_obj->labels->edit_item;
+	}
+
+	return __( 'Edit', 'wpadmin-button' );
 }
 
 /**
