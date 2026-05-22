@@ -282,7 +282,7 @@ function wpadmin_button_register_admin_page() {
 	add_management_page(
 		__( 'WPAdmin Button', 'wpadmin-button' ),
 		__( 'WPAdmin Button', 'wpadmin-button' ),
-		'read',
+		'manage_options',
 		'wpadmin-button',
 		'wpadmin_button_render_admin_page'
 	);
@@ -320,178 +320,136 @@ function wpadmin_button_settings_capability() {
 add_filter( 'option_page_capability_wpadmin_button_settings', 'wpadmin_button_settings_capability' );
 
 /**
- * Renders the Tools page.
+ * Enqueues the sortable script on the plugin's Tools page.
+ *
+ * @param string $hook Current admin page hook.
  */
-function wpadmin_button_render_admin_page() {
-	if ( ! current_user_can( 'read' ) ) {
+function wpadmin_button_enqueue_admin_assets( $hook ) {
+	if ( 'tools_page_wpadmin-button' !== $hook ) {
 		return;
 	}
 
-	$settings            = wpadmin_button_get_settings();
-	$user_id             = get_current_user_id();
-	$show_toolbar        = get_user_option( 'show_admin_bar_front', $user_id );
-	$toolbar_enabled     = 'false' !== $show_toolbar;
-	$can_manage_settings = wpadmin_button_can_manage_global_settings();
-	$toolbar_updated     = isset( $_GET['wpadmin_button_toolbar_updated'] );
-	$settings_updated    = isset( $_GET['settings-updated'] );
+	wp_enqueue_script( 'jquery-ui-sortable' );
 
-	if ( $can_manage_settings ) {
-		$roles   = get_editable_roles();
-		$targets = wpadmin_button_get_destinations();
+	$script = <<<JS
+jQuery(function($){
+	var list = $('#wpadmin-button-menu-list');
+	if(!list.length){return;}
+	function sync(){
+		var order = list.find('.wpadmin-button-sortable__row').map(function(){return $(this).data('key');}).get();
+		$('#wpadmin-button-menu-order').val(order.join(','));
+	}
+	list.sortable({handle:'.wpadmin-button-sortable__handle',update:sync});
+	sync();
+});
+JS;
+
+	wp_add_inline_script( 'jquery-ui-sortable', $script );
+
+	wp_add_inline_style( 'common', '.wpadmin-button-sortable{margin:0;max-width:360px}.wpadmin-button-sortable__row{padding:8px 10px;border:1px solid #dcdcde;background:#fff;margin-bottom:-1px;display:flex;align-items:center;gap:8px}.wpadmin-button-sortable__handle{cursor:move;color:#787c82}' );
+}
+add_action( 'admin_enqueue_scripts', 'wpadmin_button_enqueue_admin_assets' );
+
+function wpadmin_button_render_admin_page() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
+	$settings        = wpadmin_button_get_settings();
+	$roles           = get_editable_roles();
+	$catalog         = wpadmin_button_get_menu_catalog();
+	$settings_saved  = isset( $_GET['settings-updated'] );
+
+	// Order rows: enabled items first (in saved order), then the rest.
+	$ordered_keys = $settings['menu_items'];
+	foreach ( array_keys( $catalog ) as $key ) {
+		if ( ! in_array( $key, $ordered_keys, true ) ) {
+			$ordered_keys[] = $key;
+		}
 	}
 	?>
 	<div class="wrap">
 		<h1><?php esc_html_e( 'WPAdmin Button', 'wpadmin-button' ); ?></h1>
 
-		<?php if ( $toolbar_updated ) : ?>
-			<div class="notice notice-success is-dismissible">
-				<p><?php esc_html_e( 'Toolbar preference updated.', 'wpadmin-button' ); ?></p>
-			</div>
-		<?php endif; ?>
-
-		<?php if ( $settings_updated && $can_manage_settings ) : ?>
+		<?php if ( $settings_saved ) : ?>
 			<div class="notice notice-success is-dismissible">
 				<p><?php esc_html_e( 'WPAdmin Button settings saved.', 'wpadmin-button' ); ?></p>
 			</div>
 		<?php endif; ?>
 
-		<h2><?php esc_html_e( 'Your toolbar preference', 'wpadmin-button' ); ?></h2>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-			<?php wp_nonce_field( 'wpadmin_button_update_toolbar', 'wpadmin_button_toolbar_nonce' ); ?>
-			<input type="hidden" name="action" value="wpadmin_button_update_toolbar" />
+		<p class="description">
+			<?php esc_html_e( 'Each user controls whether the button appears and which of these shortcuts they see from their own profile page.', 'wpadmin-button' ); ?>
+		</p>
+
+		<form method="post" action="options.php">
+			<?php settings_fields( 'wpadmin_button_settings' ); ?>
 
 			<table class="form-table" role="presentation">
 				<tbody>
 					<tr>
-						<th scope="row"><?php esc_html_e( 'Show Toolbar when viewing site', 'wpadmin-button' ); ?></th>
+						<th scope="row"><?php esc_html_e( 'Menu shortcuts', 'wpadmin-button' ); ?></th>
 						<td>
-							<label for="wpadmin-button-show-toolbar">
-								<input
-									id="wpadmin-button-show-toolbar"
-									type="checkbox"
-									name="show_admin_bar_front"
-									value="1"
-									<?php checked( $toolbar_enabled ); ?>
-								/>
-								<?php esc_html_e( 'Show the WordPress toolbar on the frontend for my account', 'wpadmin-button' ); ?>
-							</label>
+							<input type="hidden" id="wpadmin-button-menu-order" name="<?php echo esc_attr( WPADMIN_BUTTON_OPTION ); ?>[menu_order]" value="<?php echo esc_attr( implode( ',', $ordered_keys ) ); ?>" />
+							<ul id="wpadmin-button-menu-list" class="wpadmin-button-sortable">
+								<?php foreach ( $ordered_keys as $key ) : ?>
+									<li class="wpadmin-button-sortable__row" data-key="<?php echo esc_attr( $key ); ?>">
+										<span class="wpadmin-button-sortable__handle dashicons dashicons-menu" aria-hidden="true"></span>
+										<label>
+											<input
+												type="checkbox"
+												name="<?php echo esc_attr( WPADMIN_BUTTON_OPTION ); ?>[menu_items][]"
+												value="<?php echo esc_attr( $key ); ?>"
+												<?php checked( in_array( $key, $settings['menu_items'], true ) ); ?>
+											/>
+											<?php echo esc_html( $catalog[ $key ]['label'] ); ?>
+										</label>
+									</li>
+								<?php endforeach; ?>
+							</ul>
 							<p class="description">
-								<?php
-								if ( $can_manage_settings ) {
-									esc_html_e( 'Turn this off to show the floating WPAdmin Button instead, when your role is allowed below.', 'wpadmin-button' );
-								} else {
-									esc_html_e( 'Turn this off to show the floating WPAdmin Button instead, when an administrator has allowed your role.', 'wpadmin-button' );
-								}
-								?>
+								<?php esc_html_e( 'Tick the shortcuts to include and drag to reorder. "Edit current page" only appears when viewing an editable post or page.', 'wpadmin-button' ); ?>
 							</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Display for roles', 'wpadmin-button' ); ?></th>
+						<td>
+							<fieldset>
+								<legend class="screen-reader-text"><?php esc_html_e( 'Display for roles', 'wpadmin-button' ); ?></legend>
+								<?php foreach ( $roles as $role_key => $role ) : ?>
+									<label>
+										<input
+											type="checkbox"
+											name="<?php echo esc_attr( WPADMIN_BUTTON_OPTION ); ?>[roles][]"
+											value="<?php echo esc_attr( $role_key ); ?>"
+											<?php checked( in_array( $role_key, $settings['roles'], true ) ); ?>
+										/>
+										<?php echo esc_html( translate_user_role( $role['name'] ) ); ?>
+									</label>
+									<br />
+								<?php endforeach; ?>
+							</fieldset>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">
+							<label for="wpadmin-button-position"><?php esc_html_e( 'Button position', 'wpadmin-button' ); ?></label>
+						</th>
+						<td>
+							<select id="wpadmin-button-position" name="<?php echo esc_attr( WPADMIN_BUTTON_OPTION ); ?>[position]">
+								<option value="right" <?php selected( 'right', $settings['position'] ); ?>><?php esc_html_e( 'Right bottom', 'wpadmin-button' ); ?></option>
+								<option value="left" <?php selected( 'left', $settings['position'] ); ?>><?php esc_html_e( 'Left bottom', 'wpadmin-button' ); ?></option>
+							</select>
 						</td>
 					</tr>
 				</tbody>
 			</table>
 
-			<?php submit_button( __( 'Save Toolbar Preference', 'wpadmin-button' ) ); ?>
+			<?php submit_button(); ?>
 		</form>
-
-		<?php if ( $can_manage_settings ) : ?>
-			<hr />
-			<h2><?php esc_html_e( 'Global button settings', 'wpadmin-button' ); ?></h2>
-			<form method="post" action="options.php">
-				<?php settings_fields( 'wpadmin_button_settings' ); ?>
-
-				<table class="form-table" role="presentation">
-					<tbody>
-						<tr>
-							<th scope="row"><?php esc_html_e( 'Display for roles', 'wpadmin-button' ); ?></th>
-							<td>
-								<fieldset>
-									<legend class="screen-reader-text">
-										<?php esc_html_e( 'Display for roles', 'wpadmin-button' ); ?>
-									</legend>
-									<?php foreach ( $roles as $role_key => $role ) : ?>
-										<label>
-											<input
-												type="checkbox"
-												name="<?php echo esc_attr( WPADMIN_BUTTON_OPTION ); ?>[roles][]"
-												value="<?php echo esc_attr( $role_key ); ?>"
-												<?php checked( in_array( $role_key, $settings['roles'], true ) ); ?>
-											/>
-											<?php echo esc_html( translate_user_role( $role['name'] ) ); ?>
-										</label>
-										<br />
-									<?php endforeach; ?>
-									<p class="description">
-										<?php esc_html_e( 'Only administrators can change this setting. The button appears only for logged-in users in the selected roles who have disabled the toolbar when viewing the site.', 'wpadmin-button' ); ?>
-									</p>
-								</fieldset>
-							</td>
-						</tr>
-						<tr>
-							<th scope="row">
-								<label for="wpadmin-button-position"><?php esc_html_e( 'Button position', 'wpadmin-button' ); ?></label>
-							</th>
-							<td>
-								<select id="wpadmin-button-position" name="<?php echo esc_attr( WPADMIN_BUTTON_OPTION ); ?>[position]">
-									<option value="right" <?php selected( 'right', $settings['position'] ); ?>>
-										<?php esc_html_e( 'Right bottom', 'wpadmin-button' ); ?>
-									</option>
-									<option value="left" <?php selected( 'left', $settings['position'] ); ?>>
-										<?php esc_html_e( 'Left bottom', 'wpadmin-button' ); ?>
-									</option>
-								</select>
-							</td>
-						</tr>
-						<tr>
-							<th scope="row">
-								<label for="wpadmin-button-destination"><?php esc_html_e( 'Admin section on click', 'wpadmin-button' ); ?></label>
-							</th>
-							<td>
-								<select id="wpadmin-button-destination" name="<?php echo esc_attr( WPADMIN_BUTTON_OPTION ); ?>[destination]">
-									<?php foreach ( $targets as $target_key => $target ) : ?>
-										<option value="<?php echo esc_attr( $target_key ); ?>" <?php selected( $target_key, $settings['destination'] ); ?>>
-											<?php echo esc_html( $target['label'] ); ?>
-										</option>
-									<?php endforeach; ?>
-								</select>
-								<p class="description">
-									<?php esc_html_e( 'If a user cannot access the selected section, the button links to the dashboard instead.', 'wpadmin-button' ); ?>
-								</p>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-
-				<?php submit_button(); ?>
-			</form>
-		<?php endif; ?>
 	</div>
 	<?php
 }
-
-/**
- * Updates the current user's frontend toolbar preference from the plugin page.
- */
-function wpadmin_button_update_toolbar_preference() {
-	if ( ! current_user_can( 'read' ) ) {
-		wp_die( esc_html__( 'You are not allowed to update this preference.', 'wpadmin-button' ) );
-	}
-
-	check_admin_referer( 'wpadmin_button_update_toolbar', 'wpadmin_button_toolbar_nonce' );
-
-	$user_id      = get_current_user_id();
-	$show_toolbar = isset( $_POST['show_admin_bar_front'] ) ? 'true' : 'false';
-
-	update_user_meta( $user_id, 'show_admin_bar_front', $show_toolbar );
-
-	wp_safe_redirect(
-		add_query_arg(
-			'wpadmin_button_toolbar_updated',
-			'1',
-			admin_url( 'tools.php?page=wpadmin-button' )
-		)
-	);
-	exit;
-}
-add_action( 'admin_post_wpadmin_button_update_toolbar', 'wpadmin_button_update_toolbar_preference' );
 
 /**
  * Returns the user's button visibility mode: 'auto' | 'always' | 'never'.
