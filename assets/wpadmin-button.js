@@ -38,6 +38,9 @@
 	var menu = container ? container.querySelector( '.wpadmin-button__menu' ) : null;
 
 	if ( container && toggle && menu ) {
+		var canHover = window.matchMedia && window.matchMedia( '(hover: hover)' ).matches;
+		var openedByHover = false;
+
 		var items = function () {
 			return Array.prototype.slice.call( menu.querySelectorAll( '.wpadmin-button__pill' ) );
 		};
@@ -46,12 +49,20 @@
 			menu.hidden = false;
 			container.setAttribute( 'data-open', 'true' );
 			toggle.setAttribute( 'aria-expanded', 'true' );
+			var closeLabel = toggle.getAttribute( 'data-label-close' );
+			if ( closeLabel ) {
+				toggle.setAttribute( 'aria-label', closeLabel );
+			}
 		};
 
 		var close = function ( returnFocus ) {
 			menu.hidden = true;
 			container.removeAttribute( 'data-open' );
 			toggle.setAttribute( 'aria-expanded', 'false' );
+			var openLabel = toggle.getAttribute( 'data-label-open' );
+			if ( openLabel ) {
+				toggle.setAttribute( 'aria-label', openLabel );
+			}
 			if ( returnFocus ) {
 				toggle.focus();
 			}
@@ -61,8 +72,24 @@
 			return 'true' === toggle.getAttribute( 'aria-expanded' );
 		};
 
-		// Click / tap toggles.
+		// Desktop hover (only where hover is genuinely available): hover governs open state.
+		if ( canHover ) {
+			container.addEventListener( 'mouseenter', function () {
+				openedByHover = true;
+				open();
+			} );
+			container.addEventListener( 'mouseleave', function () {
+				openedByHover = false;
+				close( false );
+			} );
+		}
+
+		// Click / tap toggles. When a mouse user is already hovering, hover governs the
+		// open state, so we ignore the click to avoid immediately re-closing the menu.
 		toggle.addEventListener( 'click', function () {
+			if ( openedByHover ) {
+				return;
+			}
 			if ( isOpen() ) {
 				close( false );
 			} else {
@@ -70,15 +97,10 @@
 			}
 		} );
 
-		// Desktop hover: open on enter, close on leave.
-		container.addEventListener( 'mouseenter', open );
-		container.addEventListener( 'mouseleave', function () {
-			close( false );
-		} );
-
-		// Keyboard.
+		// A real <button> opens/closes via its native click on Enter/Space, so here we
+		// only handle the arrow keys: open the menu and move focus into it.
 		toggle.addEventListener( 'keydown', function ( event ) {
-			if ( 'ArrowUp' === event.key || 'ArrowDown' === event.key || 'Enter' === event.key || ' ' === event.key ) {
+			if ( 'ArrowUp' === event.key || 'ArrowDown' === event.key ) {
 				event.preventDefault();
 				open();
 				var list = items();
@@ -103,9 +125,10 @@
 			}
 		} );
 
-		// Tap / click outside closes.
+		// Tap / click outside closes. The body.contains guard avoids acting on a
+		// detached container (e.g. after AJAX/SPA-style page swaps).
 		document.addEventListener( 'click', function ( event ) {
-			if ( isOpen() && ! container.contains( event.target ) ) {
+			if ( isOpen() && document.body.contains( container ) && ! container.contains( event.target ) ) {
 				close( false );
 			}
 		} );

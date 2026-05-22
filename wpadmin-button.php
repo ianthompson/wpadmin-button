@@ -826,9 +826,11 @@ function wpadmin_button_render_frontend_button() {
 		<button
 			type="button"
 			class="wpadmin-button__toggle"
-			aria-haspopup="true"
+			aria-haspopup="menu"
 			aria-expanded="false"
 			aria-label="<?php esc_attr_e( 'Open admin shortcuts', 'wpadmin-button' ); ?>"
+			data-label-open="<?php esc_attr_e( 'Open admin shortcuts', 'wpadmin-button' ); ?>"
+			data-label-close="<?php esc_attr_e( 'Close admin shortcuts', 'wpadmin-button' ); ?>"
 		>
 			<span class="wpadmin-button__icon" aria-hidden="true">
 				<svg viewBox="0 0 24 24" focusable="false" role="img">
