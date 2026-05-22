@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WPAdmin Button
  * Description: Shows a small floating dashboard button when the current user has the frontend toolbar disabled.
- * Version: 1.4.3
+ * Version: 1.5.0
  * Author: Ian Thompson
  * License: GPL-2.0-or-later
  * Requires PHP: 7.4
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPADMIN_BUTTON_VERSION', '1.4.3' );
+define( 'WPADMIN_BUTTON_VERSION', '1.5.0' );
 define( 'WPADMIN_BUTTON_OPTION', 'wpadmin_button_settings' );
 define( 'WPADMIN_BUTTON_FILE', __FILE__ );
 define( 'WPADMIN_BUTTON_URL', plugin_dir_url( __FILE__ ) );
