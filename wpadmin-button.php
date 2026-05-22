@@ -231,7 +231,7 @@ function wpadmin_button_sanitize_settings( $input ) {
 		$editable_roles = get_editable_roles();
 		$valid_roles    = array_keys( $editable_roles );
 
-		foreach ( $input['roles'] as $role ) {
+		foreach ( wp_unslash( $input['roles'] ) as $role ) {
 			$role = sanitize_key( $role );
 
 			if ( in_array( $role, $valid_roles, true ) ) {
@@ -255,7 +255,7 @@ function wpadmin_button_sanitize_settings( $input ) {
 	if ( $can_manage ) {
 		$valid_keys = array_keys( wpadmin_button_get_menu_catalog() );
 		$order      = isset( $input['menu_order'] ) ? explode( ',', sanitize_text_field( wp_unslash( (string) $input['menu_order'] ) ) ) : array();
-		$enabled    = isset( $input['menu_items'] ) && is_array( $input['menu_items'] ) ? array_map( 'sanitize_key', $input['menu_items'] ) : array();
+		$enabled    = isset( $input['menu_items'] ) && is_array( $input['menu_items'] ) ? array_map( 'sanitize_key', wp_unslash( $input['menu_items'] ) ) : array();
 
 		$menu_items = array();
 		foreach ( $order as $key ) {
@@ -350,6 +350,9 @@ JS;
 }
 add_action( 'admin_enqueue_scripts', 'wpadmin_button_enqueue_admin_assets' );
 
+/**
+ * Renders the plugin's global settings page under Tools.
+ */
 function wpadmin_button_render_admin_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
@@ -536,7 +539,9 @@ function wpadmin_button_render_profile_fields( $user ) {
 							echo '<p class="description">' . esc_html__( 'No shortcuts have been enabled by an administrator yet.', 'wpadmin-button' ) . '</p>';
 						}
 						?>
-						<p class="description"><?php esc_html_e( 'Untick any shortcuts you do not want in your menu. You can only choose from shortcuts an administrator has enabled.', 'wpadmin-button' ); ?></p>
+						<?php if ( $shown_any ) : ?>
+							<p class="description"><?php esc_html_e( 'Untick any shortcuts you do not want in your menu. You can only choose from shortcuts an administrator has enabled.', 'wpadmin-button' ); ?></p>
+						<?php endif; ?>
 					</fieldset>
 				</td>
 			</tr>
@@ -554,6 +559,11 @@ add_action( 'edit_user_profile', 'wpadmin_button_render_profile_fields' );
  */
 function wpadmin_button_save_profile_fields( $user_id ) {
 	if ( ! current_user_can( 'edit_user', $user_id ) ) {
+		return;
+	}
+
+	// Only process when our profile fields were actually rendered/submitted.
+	if ( ! isset( $_POST['wpadmin_button_visibility'] ) && ! isset( $_POST['wpadmin_button_shown_items'] ) ) {
 		return;
 	}
 
