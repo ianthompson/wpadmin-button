@@ -1,18 +1,20 @@
 # WPAdmin Button
 
-WPAdmin Button adds a small round floating settings button on the frontend for logged-in users who have disabled the WordPress toolbar.
+WPAdmin Button adds a round floating button on the frontend that expands into a menu of WordPress admin shortcuts — including a contextual "Edit current page" link when viewing an editable post or page.
 
 From **Tools > WPAdmin Button**, administrators can choose:
 
+- which shortcuts appear in the menu, and their order
 - which user roles see the button
 - whether the button appears bottom-left or bottom-right
-- which WordPress admin section opens when the button is clicked
+
+Each shortcut is automatically hidden from any user who lacks permission to use it.
+
+From their own profile page, each user chooses when the button appears — automatically (only when the WordPress toolbar is hidden), always, or never — and can hide any shortcuts they don't want to see.
 
 When WordPress reports pending updates, users with update permissions also see a small red badge on the button. The badge links directly to **Dashboard > Updates**.
 
-Logged-in dashboard users can also update their own frontend toolbar preference from the same plugin page. Only administrators can manage the global role, position, and destination settings.
-
-The button uses the logged-in user's Administration Color Scheme.
+The button and its menu use the logged-in user's Administration Color Scheme.
 
 ## Updates
 
