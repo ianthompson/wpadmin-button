@@ -489,6 +489,38 @@ function wpadmin_button_update_toolbar_preference() {
 add_action( 'admin_post_wpadmin_button_update_toolbar', 'wpadmin_button_update_toolbar_preference' );
 
 /**
+ * Returns the user's button visibility mode: 'auto' | 'always' | 'never'.
+ *
+ * @param int $user_id User ID.
+ * @return string
+ */
+function wpadmin_button_get_visibility_mode( $user_id ) {
+	$mode = get_user_meta( $user_id, 'wpadmin_button_visibility', true );
+
+	if ( ! in_array( $mode, array( 'auto', 'always', 'never' ), true ) ) {
+		$mode = 'auto';
+	}
+
+	return $mode;
+}
+
+/**
+ * Returns the list of menu-item keys the user has hidden for themselves.
+ *
+ * @param int $user_id User ID.
+ * @return string[]
+ */
+function wpadmin_button_get_hidden_items( $user_id ) {
+	$hidden = get_user_meta( $user_id, 'wpadmin_button_hidden_items', true );
+
+	if ( ! is_array( $hidden ) ) {
+		return array();
+	}
+
+	return array_values( array_filter( array_map( 'sanitize_key', $hidden ) ) );
+}
+
+/**
  * Determines whether the current user should see the floating button.
  *
  * @return bool
@@ -498,20 +530,18 @@ function wpadmin_button_should_display() {
 		return false;
 	}
 
-	$user_id = get_current_user_id();
-
-	if ( 'false' !== get_user_option( 'show_admin_bar_front', $user_id ) ) {
-		return false;
-	}
-
 	$user     = wp_get_current_user();
 	$settings = wpadmin_button_get_settings();
 
-	if ( empty( $settings['roles'] ) ) {
+	if ( empty( $settings['roles'] ) || ! array_intersect( (array) $user->roles, $settings['roles'] ) ) {
 		return false;
 	}
 
-	return (bool) array_intersect( (array) $user->roles, $settings['roles'] );
+	$user_id        = get_current_user_id();
+	$mode           = wpadmin_button_get_visibility_mode( $user_id );
+	$toolbar_hidden = ( 'false' === get_user_option( 'show_admin_bar_front', $user_id ) );
+
+	return wpadmin_button_resolve_visibility( $mode, $toolbar_hidden );
 }
 
 /**
