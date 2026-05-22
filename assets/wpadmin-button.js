@@ -40,6 +40,10 @@
 	if ( container && toggle && menu ) {
 		var canHover = window.matchMedia && window.matchMedia( '(hover: hover)' ).matches;
 		var openedByHover = false;
+		var scrollSettleTimer = null;
+		// Slightly longer than the longest pill animation (delay + duration) so
+		// scrolling is only enabled once the entrance has fully settled.
+		var SCROLL_SETTLE_MS = 620;
 
 		var items = function () {
 			return Array.prototype.slice.call( menu.querySelectorAll( '.wpadmin-button__pill' ) );
@@ -53,9 +57,18 @@
 			if ( closeLabel ) {
 				toggle.setAttribute( 'aria-label', closeLabel );
 			}
+			// The menu clips during the entrance so the rise transforms never flash
+			// a scrollbar. Once the animation has settled, switch to auto so a tall
+			// menu can scroll (auto shows a scrollbar only when content overflows).
+			window.clearTimeout( scrollSettleTimer );
+			scrollSettleTimer = window.setTimeout( function () {
+				menu.classList.add( 'is-scrollable' );
+			}, SCROLL_SETTLE_MS );
 		};
 
 		var close = function ( returnFocus ) {
+			window.clearTimeout( scrollSettleTimer );
+			menu.classList.remove( 'is-scrollable' );
 			menu.hidden = true;
 			container.removeAttribute( 'data-open' );
 			toggle.setAttribute( 'aria-expanded', 'false' );

@@ -63,7 +63,7 @@
 	list-style: none;
 	margin: 0;
 	max-height: calc(100vh - 96px);
-	overflow-y: auto;
+	overflow: hidden;
 	padding: 0;
 	position: absolute;
 	right: 0;
@@ -77,6 +77,13 @@
 
 .wpadmin-button__menu:not([hidden]) {
 	display: flex;
+}
+
+/* The menu clips during the entrance (overflow: hidden) so the in-flight rise
+   transforms never flash a scrollbar. JS adds this class once the animation has
+   settled; `auto` then shows a scrollbar only if a tall menu actually overflows. */
+.wpadmin-button__menu.is-scrollable {
+	overflow-y: auto;
 }
 
 .wpadmin-button__menu-item {
@@ -183,19 +190,22 @@
 	}
 }
 
-/* Entrance animation for each pill when the menu opens. */
+/* Entrance: each pill rises smoothly into place and the stack fans open.
+   The pill nearest the button leads and barely moves; pills further up start
+   bunched closer to the button (a larger rise) and arrive slightly later, so
+   the menu spreads apart as it opens. nth-last-child counts from the button. */
 .wpadmin-button[data-open="true"] .wpadmin-button__menu-item {
-	animation: wpadmin-button-pop 200ms ease both;
+	animation: wpadmin-button-rise 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-child(1) { animation-delay: 0ms; }
-.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-child(2) { animation-delay: 30ms; }
-.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-child(3) { animation-delay: 60ms; }
-.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-child(4) { animation-delay: 90ms; }
-.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-child(n+5) { animation-delay: 120ms; }
+.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-last-child(1) { --wpadmin-button-rise: 8px;  animation-delay: 0ms; }
+.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-last-child(2) { --wpadmin-button-rise: 30px; animation-delay: 55ms; }
+.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-last-child(3) { --wpadmin-button-rise: 52px; animation-delay: 110ms; }
+.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-last-child(4) { --wpadmin-button-rise: 74px; animation-delay: 165ms; }
+.wpadmin-button[data-open="true"] .wpadmin-button__menu-item:nth-last-child(n+5) { --wpadmin-button-rise: 92px; animation-delay: 210ms; }
 
-@keyframes wpadmin-button-pop {
-	from { opacity: 0; transform: translateY(8px); }
+@keyframes wpadmin-button-rise {
+	from { opacity: 0; transform: translateY(var(--wpadmin-button-rise, 16px)); }
 	to   { opacity: 1; transform: translateY(0); }
 }
 
