@@ -545,6 +545,54 @@ function wpadmin_button_should_display() {
 }
 
 /**
+ * Builds the ordered list of menu items to render for the current user, each
+ * resolved to its URL and label.
+ *
+ * @return array<int, array{key: string, url: string, label: string}>
+ */
+function wpadmin_button_get_render_items() {
+	$settings     = wpadmin_button_get_settings();
+	$user_id      = get_current_user_id();
+	$hidden       = wpadmin_button_get_hidden_items( $user_id );
+	$destinations = wpadmin_button_get_destinations();
+	$edit_url     = wpadmin_button_edit_current_url();
+
+	$can_use = function ( $key ) use ( $destinations, $edit_url ) {
+		if ( 'edit_current' === $key ) {
+			return '' !== $edit_url;
+		}
+
+		if ( ! isset( $destinations[ $key ] ) ) {
+			return false;
+		}
+
+		return current_user_can( $destinations[ $key ]['capability'] );
+	};
+
+	$keys  = wpadmin_button_filter_menu_items( $settings['menu_items'], $hidden, $can_use );
+	$items = array();
+
+	foreach ( $keys as $key ) {
+		if ( 'edit_current' === $key ) {
+			$items[] = array(
+				'key'   => 'edit_current',
+				'url'   => $edit_url,
+				'label' => wpadmin_button_edit_current_label(),
+			);
+			continue;
+		}
+
+		$items[] = array(
+			'key'   => $key,
+			'url'   => admin_url( $destinations[ $key ]['path'] ),
+			'label' => $destinations[ $key ]['label'],
+		);
+	}
+
+	return $items;
+}
+
+/**
  * Gets the admin URL for the configured button destination.
  *
  * @return string
