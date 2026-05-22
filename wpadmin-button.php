@@ -201,6 +201,10 @@ function wpadmin_button_edit_current_url() {
  * @return string
  */
 function wpadmin_button_edit_current_label() {
+	if ( ! is_singular() ) {
+		return __( 'Edit', 'wpadmin-button' );
+	}
+
 	$post_id   = get_queried_object_id();
 	$post_type = $post_id ? get_post_type( $post_id ) : '';
 	$type_obj  = $post_type ? get_post_type_object( $post_type ) : null;
@@ -219,10 +223,11 @@ function wpadmin_button_edit_current_label() {
  * @return array{roles: string[], position: string, menu_items: string[]}
  */
 function wpadmin_button_sanitize_settings( $input ) {
+	$can_manage       = wpadmin_button_can_manage_global_settings();
 	$current_settings = wpadmin_button_get_settings();
 	$roles            = array();
 
-	if ( wpadmin_button_can_manage_global_settings() && isset( $input['roles'] ) && is_array( $input['roles'] ) ) {
+	if ( $can_manage && isset( $input['roles'] ) && is_array( $input['roles'] ) ) {
 		$editable_roles = get_editable_roles();
 		$valid_roles    = array_keys( $editable_roles );
 
@@ -235,11 +240,11 @@ function wpadmin_button_sanitize_settings( $input ) {
 		}
 	}
 
-	if ( ! wpadmin_button_can_manage_global_settings() ) {
+	if ( ! $can_manage ) {
 		$roles = $current_settings['roles'];
 	}
 
-	$position = wpadmin_button_can_manage_global_settings() && isset( $input['position'] ) ? sanitize_key( $input['position'] ) : $current_settings['position'];
+	$position = $can_manage && isset( $input['position'] ) ? sanitize_key( $input['position'] ) : $current_settings['position'];
 
 	if ( ! in_array( $position, array( 'left', 'right' ), true ) ) {
 		$position = 'right';
@@ -247,9 +252,9 @@ function wpadmin_button_sanitize_settings( $input ) {
 
 	// Menu items: an ordered, hidden-field-encoded list "key1,key2,..." from the
 	// sortable UI, plus per-row checkboxes for which are enabled.
-	if ( wpadmin_button_can_manage_global_settings() ) {
+	if ( $can_manage ) {
 		$valid_keys = array_keys( wpadmin_button_get_menu_catalog() );
-		$order      = isset( $input['menu_order'] ) ? explode( ',', (string) $input['menu_order'] ) : array();
+		$order      = isset( $input['menu_order'] ) ? explode( ',', sanitize_text_field( wp_unslash( (string) $input['menu_order'] ) ) ) : array();
 		$enabled    = isset( $input['menu_items'] ) && is_array( $input['menu_items'] ) ? array_map( 'sanitize_key', $input['menu_items'] ) : array();
 
 		$menu_items = array();
