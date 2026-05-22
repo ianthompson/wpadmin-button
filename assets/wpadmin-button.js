@@ -80,7 +80,8 @@
 			} );
 			container.addEventListener( 'mouseleave', function () {
 				openedByHover = false;
-				close( false );
+				var focusInside = document.activeElement && container.contains( document.activeElement );
+				close( focusInside );
 			} );
 		}
 

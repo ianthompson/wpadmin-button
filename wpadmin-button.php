@@ -558,6 +558,8 @@ add_action( 'edit_user_profile', 'wpadmin_button_render_profile_fields' );
  * @param int $user_id The user being saved.
  */
 function wpadmin_button_save_profile_fields( $user_id ) {
+	// CSRF is covered by core's check_admin_referer( 'update-user_' . $user_id ) in
+	// wp-admin/user-edit.php and profile.php before these hooks fire.
 	if ( ! current_user_can( 'edit_user', $user_id ) ) {
 		return;
 	}
@@ -1031,7 +1033,7 @@ function wpadmin_button_plugin_info( $result, $action, $args ) {
 		'last_updated'  => $published_at,
 		'download_link' => $package_url,
 		'sections'      => array(
-			'description' => __( 'Adds a small floating admin button on the frontend for logged-in users who have disabled the WordPress toolbar.', 'wpadmin-button' ),
+			'description' => __( 'Adds a floating admin button on the frontend that expands into a menu of WordPress admin shortcuts.', 'wpadmin-button' ),
 			'changelog'   => $body,
 		),
 	);
